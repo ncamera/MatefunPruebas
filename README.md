@@ -13,4 +13,4 @@ Transpilar archivos automáticamente (necesario para que se guarden los cambios 
 `tsc -w`
 
 Ejecutar la aplicación
-`live-server --entry-file=src/index.html`
+`npm start`
