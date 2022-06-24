@@ -66,6 +66,8 @@ const figureProperties = {
 };
 const WIRE_FRAME_COLOR = { color: 0x61d0f1 };
 
+const CONE_X_POSITION = 1;
+
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
   75,
@@ -104,15 +106,15 @@ const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
 scene.add(cube);
 
 /* - - - - - - - - - - - CONO - - - - - - - - - - - - - - - */
-const coneHeight = 1;
-const coneRadius = 1;
+const coneHeight = 2;
+const coneRadius = 3;
 const coneGeometry = new THREE.ConeGeometry(coneRadius, coneHeight, 64);
 const coneMaterial = new THREE.MeshBasicMaterial(figureProperties);
 const cone = new THREE.Mesh(coneGeometry, coneMaterial);
 scene.add(cone);
 
 /* - - - - - - - - - - - CIRCULO - - - - - - - - - - - - - - - */
-const circleGeometry = new THREE.CircleGeometry(1, 128);
+const circleGeometry = new THREE.CircleGeometry(coneRadius, 128);
 const circleMaterial = new THREE.MeshBasicMaterial({
   color: 0xc0ffee,
   transparent: true,
@@ -121,17 +123,43 @@ const circleMaterial = new THREE.MeshBasicMaterial({
 const circle = new THREE.Mesh(circleGeometry, circleMaterial);
 scene.add(circle);
 
-/* - - - - - - - - - - - Line - - - - - - - - - - - - - - - */
-const lineMaterial = new THREE.LineBasicMaterial(WIRE_FRAME_COLOR);
+/* - - - - - - Dashed line of cone height - - - - - - - - - - */
+const lineMaterial = new THREE.LineDashedMaterial({
+  color: 0xffffff,
+  linewidth: 1,
+  scale: 1,
+  dashSize: coneHeight / 20,
+  gapSize: coneHeight / 20,
+});
+const pointsLineConeHeight = [];
+pointsLineConeHeight.push(new THREE.Vector3(-coneRadius, 0, 0));
+pointsLineConeHeight.push(new THREE.Vector3(-coneRadius, coneHeight, 0));
 
-const points = [];
-points.push(new THREE.Vector3(-1, 0, 0));
-points.push(new THREE.Vector3(-1, coneHeight, 0));
+const geometryLineConeHeight = new THREE.BufferGeometry().setFromPoints(
+  pointsLineConeHeight
+);
 
-const geometry = new THREE.BufferGeometry().setFromPoints(points);
+const lineConeHeight = new THREE.Line(geometryLineConeHeight, lineMaterial);
+lineConeHeight.computeLineDistances();
+scene.add(lineConeHeight);
 
-const line = new THREE.Line(geometry, lineMaterial);
-scene.add(line);
+/* - - - - - - Dashed line of cone radius - - - - - - - - - - */
+const lineMaterialRadius = new THREE.LineDashedMaterial({
+  color: 0xffffff,
+  linewidth: 1,
+  scale: 1,
+  dashSize: coneRadius / 20,
+  gapSize: coneRadius / 20,
+});
+const pointsLineRadius = [];
+pointsLineRadius.push(new THREE.Vector3(-coneRadius, -(coneHeight / 2), 0));
+pointsLineRadius.push(new THREE.Vector3(0, -(coneHeight / 2), 0));
+
+const geometryAux = new THREE.BufferGeometry().setFromPoints(pointsLineRadius);
+
+const lineConeRadius = new THREE.Line(geometryAux, lineMaterialRadius);
+lineConeRadius.computeLineDistances();
+scene.add(lineConeRadius);
 
 // - - - - Wireframe cube  - - - -
 const geomentryEdgesCube = new THREE.EdgesGeometry(cube.geometry); // or WireframeGeometry
@@ -172,14 +200,16 @@ circle.add(wireframeCircle);
 /* - - - - - - - Posicion de las figuras - - - - - - - */
 cube.position.x = -1.5;
 
-cone.position.x = 1;
+cone.position.x = CONE_X_POSITION;
 
-circle.position.x = 1;
+circle.position.x = cone.position.x;
 circle.position.y = -coneHeight / 2;
 circle.rotation.x = -Math.PI / 2;
 
-line.position.x = 1 + coneRadius;
-line.position.y = -coneHeight / 2;
+lineConeHeight.position.x = cone.position.x + coneRadius;
+lineConeHeight.position.y = -coneHeight / 2;
+lineConeRadius.position.x = cone.position.x;
+// lineConeRadius.position.y = coneHeight / 2;
 // line.position.y = 1;
 
 polyhedron.position.x = 0;
