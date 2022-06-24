@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "live-server --entry-file=src/index.html",
+    "start": "live-server --port=0 --entry-file=src/index.html",
     "test": "echo \"Error: no test specified\" && exit 1",
     "tsc:w": "tsc -w"
   },
