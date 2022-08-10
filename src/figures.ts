@@ -243,13 +243,23 @@ function triangulatePolygon(polygon2D: number[], height: number): Float32Array {
 // const verticesOfPolygon3D = [2, 2, 2, 2.48, 1.54, 2.63, 1.26, 2.24, 1.54, 1.85];
 
 // - - - - - - - - - - - - - - - - - - - - - - - -
-//             HEXAGONOS DEFINITIVOS
+//             HEXÁGONOS DEFINITIVOS
 // - - - - - - - - - - - - - - - - - - - - - - - -
 const MATERIAL = new THREE.MeshBasicMaterial({
   color: 0xc0ffee,
   transparent: true,
   opacity: 0.5,
   side: THREE.DoubleSide,
+});
+
+const MATERIAL_MESH = new THREE.LineDashedMaterial(WIRE_FRAME_COLOR);
+
+const LINE_MATERIAL = new THREE.LineDashedMaterial({
+  color: 0xffffff,
+  linewidth: 1,
+  scale: 1,
+  dashSize: coneHeight / 20,
+  gapSize: coneHeight / 20,
 });
 
 const topPolygon: number[] = [
@@ -272,11 +282,50 @@ function graphPolygon(triangles: Float32Array) {
   scene.add(mesh);
 }
 
-graphPolygon(triangulatePolygon(topPolygon, 0));
-graphPolygon(triangulatePolygon(bottomPolygon, -2));
+function addWireframeToFigure(
+  figure: THREE.Mesh<THREE.BoxGeometry, THREE.MeshBasicMaterial>
+) {
+  const geometry = new THREE.EdgesGeometry(figure.geometry);
+  const material = new THREE.LineBasicMaterial(WIRE_FRAME_COLOR);
+  const wireFrame = new THREE.LineSegments(geometry, material);
+
+  figure.add(wireFrame);
+}
+
+function addWireframeTo3DPolygon(figure: Float32Array) {
+  const vertices = new Float32Array(figure);
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
+
+  const mesh = new THREE.Mesh(geometry, MATERIAL);
+  scene.add(mesh);
+
+  const geometryMesh = new THREE.EdgesGeometry(mesh.geometry); // or WireframeGeometry
+
+  const wireFrame = new THREE.LineSegments(geometryMesh, MATERIAL_MESH);
+  mesh.add(wireFrame);
+}
+
+interface Point3D {
+  x: number;
+  y: number;
+  z: number;
+}
+
+function graphLine(points: Point3D[]) {
+  const pointsLine = [];
+  pointsLine.push(new THREE.Vector3(points[0].x, points[0].y, points[0].z));
+  pointsLine.push(new THREE.Vector3(points[1].x, points[1].y, points[1].z));
+
+  const geometryLine = new THREE.BufferGeometry().setFromPoints(pointsLine);
+
+  const lineHeight = new THREE.Line(geometryLine, LINE_MATERIAL);
+  lineHeight.computeLineDistances();
+  scene.add(lineHeight);
+}
 
 /**
- *
+ * Given two 3D polygons it completes the polygons with edges.
  * @param topPolygon
  * @param bottomPolygon
  * @param topPolygonHeight
@@ -290,6 +339,7 @@ function complete3DFigureWithFaces(
 ) {
   const iterationLimit = topPolygon.length / 2 - 1;
 
+  // Iterate through the polygon's vertices and add each edge
   for (let i = 0; i < iterationLimit; i++) {
     const index = i * 2;
 
@@ -317,12 +367,80 @@ function complete3DFigureWithFaces(
       topPolygonHeight,
     ];
 
+    // Add the edge
     const triangles = new Float32Array(topTriangle.concat(bottomTriangle));
     graphPolygon(triangles);
+
+    const topPoint: Point3D = {
+      x: topPolygon[index],
+      y: topPolygon[index + 1],
+      z: topPolygonHeight,
+    };
+    const bottomPoint: Point3D = {
+      x: bottomPolygon[index],
+      y: bottomPolygon[index + 1],
+      z: bottomPolygonHeight,
+    };
+
+    graphLine([topPoint, bottomPoint]);
   }
+
+  // Graph the last edge and last line
+  const peLastIndex = topPolygon.length - 2;
+  const lastIndex = 0;
+
+  const topTriangle = [
+    topPolygon[peLastIndex],
+    topPolygon[peLastIndex + 1],
+    topPolygonHeight,
+    topPolygon[lastIndex],
+    topPolygon[lastIndex + 1],
+    topPolygonHeight,
+    bottomPolygon[peLastIndex],
+    bottomPolygon[peLastIndex + 1],
+    bottomPolygonHeight,
+  ];
+
+  const bottomTriangle = [
+    bottomPolygon[peLastIndex],
+    bottomPolygon[peLastIndex + 1],
+    bottomPolygonHeight,
+    bottomPolygon[lastIndex],
+    bottomPolygon[lastIndex + 1],
+    bottomPolygonHeight,
+    topPolygon[lastIndex],
+    topPolygon[lastIndex + 1],
+    topPolygonHeight,
+  ];
+
+  // Add the edge
+  const triangles = new Float32Array(topTriangle.concat(bottomTriangle));
+  graphPolygon(triangles);
+
+  const topPoint: Point3D = {
+    x: topPolygon[peLastIndex],
+    y: topPolygon[peLastIndex + 1],
+    z: topPolygonHeight,
+  };
+  const bottomPoint: Point3D = {
+    x: bottomPolygon[peLastIndex],
+    y: bottomPolygon[peLastIndex + 1],
+    z: bottomPolygonHeight,
+  };
+
+  graphLine([topPoint, bottomPoint]);
 }
 
+const top3DPolygon = triangulatePolygon(topPolygon, 0);
+const bottom3DPolygon = triangulatePolygon(bottomPolygon, -2);
+
+// graphPolygon(top3DPolygon);
+// graphPolygon(bottom3DPolygon);
+
 complete3DFigureWithFaces(topPolygon, bottomPolygon, 0, -2);
+
+addWireframeTo3DPolygon(top3DPolygon);
+addWireframeTo3DPolygon(bottom3DPolygon);
 
 // const vertices3DDDD = new Float32Array([
 // 0   -0.74, 0.24, 0,
